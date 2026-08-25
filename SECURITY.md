@@ -1,5 +1,7 @@
 # Security Policy
 
+[Dansk](SECURITY.da.md) | **English**
+
 ## Supported versions
 
 Security fixes are made on the latest published release. The initial supported runtime is macOS on Apple Silicon.

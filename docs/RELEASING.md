@@ -1,5 +1,7 @@
 # Releasing Billy Plugin
 
+[Dansk](RELEASING.da.md) | **English**
+
 Billy Plugin is released personally from `morphar/billy-plugin`. Official beta releases are fully local packages: the archive contains the plugin, accounting skill, configuration, OpenAPI contract, and a prebuilt macOS Apple Silicon executable.
 
 ## One-time setup

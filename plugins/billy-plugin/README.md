@@ -1,5 +1,7 @@
 # Billy Plugin
 
+[Dansk](README.da.md) | **English**
+
 > [!WARNING]
 > **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Automated tests, code signing, and notarization do not guarantee correct bookkeeping behavior. Test with a non-production Billy account, keep write tools disabled unless needed, and independently verify every accounting result and change.
 
@@ -38,6 +40,20 @@ device-only, non-synchronizing macOS Keychain item. The credential is never
 accepted as a command-line argument or MCP tool input.
 
 `BILLY_ACCESS_TOKEN` remains available as an environment override for development. When it is unset, the MCP falls back to Keychain.
+
+### macOS Keychain authorization
+
+The token-entry dialog described above is controlled by Billy Plugin. macOS can also show its own authorization dialog when the `billy-mcp` executable tries to read an existing Keychain item. This commonly happens on first access and may happen again after installing an update or otherwise changing the executable's code identity. macOS may show more than one authorization dialog while granting access.
+
+For an official Billy Plugin release, check the dialog before approving it:
+
+- the requesting executable is `billy-mcp`
+- the Keychain item is `com.morphar.billy-plugin`
+- the item is in the `login` Keychain
+
+Choose **Always Allow** (`Tillad altid` on a Danish Mac) if these details match and you want the signed plugin to read the token without asking each time. Enter the password for the `login` Keychain—normally the Mac login password, **not** the Billy token. **Allow** (`Tillad`) grants the current request only and may cause another prompt later. **Deny** (`Afvis`) prevents the credential from being read; no Billy API request is sent.
+
+If access was denied, a client may report macOS Keychain error `-25293`. Retry the operation and approve the matching Keychain dialog. If prompts or that error continue after **Always Allow**, quit and reopen the AI client and start a new task; a task opened before installation or update can still be using the previous MCP process. A later signed release can legitimately prompt again because macOS evaluates the updated executable separately.
 
 ## Tool configuration
 

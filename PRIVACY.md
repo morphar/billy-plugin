@@ -1,5 +1,7 @@
 # Privacy
 
+[Dansk](PRIVACY.da.md) | **English**
+
 Billy Plugin is fully local middleware. It does not operate a hosted service and does not collect analytics, telemetry, credentials, or accounting records for the plugin author.
 
 ## Data flow

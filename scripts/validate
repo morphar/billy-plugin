@@ -58,14 +58,33 @@ assert api_mcp_commit in notices
 for relative in (
     "LICENSE",
     "README.md",
+    "README.da.md",
     "THIRD_PARTY_NOTICES.md",
     "bin/darwin-arm64/billy-mcp",
     "config/billy.json",
     "config/features.json",
     "openapi/billy.yaml",
+    "openapi/README.da.md",
     "skills/accounting/SKILL.md",
 ):
     assert (root / "plugins/billy-plugin" / relative).is_file(), relative
+
+for relative in (
+    "README.da.md",
+    "PRIVACY.da.md",
+    "SECURITY.da.md",
+    "SUPPORT.da.md",
+    "CONTRIBUTING.da.md",
+    "docs/RELEASING.da.md",
+):
+    assert (root / relative).is_file(), relative
+
+english_plugin_guide = (root / "plugins/billy-plugin/README.md").read_text()
+danish_plugin_guide = (root / "plugins/billy-plugin/README.da.md").read_text()
+for guide in (english_plugin_guide, danish_plugin_guide):
+    assert "billy-mcp" in guide
+    assert "com.morphar.billy-plugin" in guide
+    assert "-25293" in guide
 
 print("plugin structure: ok")
 PY

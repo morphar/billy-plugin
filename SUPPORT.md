@@ -1,5 +1,7 @@
 # Support
 
+[Dansk](SUPPORT.da.md) | **English**
+
 Use GitHub Issues for reproducible installation problems, feature requests, and non-sensitive bugs. Include the plugin version from the manifest, macOS version, AI client, and the exact non-secret error text.
 
 Never post a Billy token, Keychain export, organization ID, customer record, invoice, bank line, or other private accounting data. Use a private GitHub Security Advisory for possible security or privacy vulnerabilities.

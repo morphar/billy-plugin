@@ -1,5 +1,7 @@
 # Billy Plugin
 
+[Dansk](README.da.md) | **English**
+
 > [!WARNING]
 > **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Automated tests, code signing, and notarization do not guarantee correct bookkeeping behavior. Test with a non-production Billy account, keep write tools disabled unless needed, and independently verify every accounting result and change.
 
@@ -26,6 +28,17 @@ codex plugin add billy-plugin@billy
 ```
 
 Restart ChatGPT desktop or Codex and start a new task so the bundled skill and MCP tools are loaded. No Go or Node.js installation is required.
+
+### First Keychain access
+
+Two different secure dialogs can appear, and neither exposes the Billy token to the AI client:
+
+1. If no token is stored, Billy Plugin opens its own secure-input dialog and asks for the Billy token twice before storing it in macOS Keychain.
+2. When `billy-mcp` reads the stored item for the first time, after an update, or after its code identity changes, macOS may show one or more Keychain authorization dialogs.
+
+For an official release, verify that the requester is `billy-mcp`, the Keychain item is `com.morphar.billy-plugin`, and the Keychain is `login`. Choose **Always Allow** (`Tillad altid` on a Danish Mac) to avoid a prompt on every read, and enter the password for the Mac login Keychain—normally the Mac login password, **not** the Billy token. Choosing **Deny** prevents the credential from being read and no Billy request is sent.
+
+After installing or updating the plugin, restart the AI client and start a new task. A task that was already open can still be connected to the previous MCP process. See the packaged [plugin guide](plugins/billy-plugin/README.md#first-use-credential-setup) for troubleshooting.
 
 ## Install from this checkout
 

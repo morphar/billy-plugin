@@ -1,5 +1,7 @@
 # Contributing
 
+[Dansk](CONTRIBUTING.da.md) | **English**
+
 Thank you for helping improve Billy Plugin.
 
 Use a GitHub issue before substantial behavior, permission-model, packaging, or public-contract changes. Report security issues privately as described in [SECURITY.md](SECURITY.md).

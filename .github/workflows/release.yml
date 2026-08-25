@@ -149,7 +149,11 @@ jobs:
           mkdir -p "$stage"
           ditto .agents "$stage/.agents"
           ditto plugins "$stage/plugins"
-          cp README.md LICENSE PRIVACY.md SECURITY.md SUPPORT.md "$stage/"
+          cp README.md README.da.md LICENSE \
+            PRIVACY.md PRIVACY.da.md \
+            SECURITY.md SECURITY.da.md \
+            SUPPORT.md SUPPORT.da.md \
+            "$stage/"
           python3 - "$stage/plugins/billy-plugin/.codex-plugin/plugin.json" "$version" <<'PY'
           import json
           import pathlib
@@ -180,7 +184,9 @@ jobs:
           set -euo pipefail
           prerelease=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then prerelease+=(--prerelease); fi
-          release_notice='> **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Test with a non-production Billy account and independently verify every accounting result and change.'
+          release_notice='> **Beta / AI-genereret kode:** Dette er eksperimentel betasoftware, og en stor del af koden, dokumentationen og Billy OpenAPI-kontrakten er genereret med hjælp fra AI under menneskelig styring og gennemgang. Test med en Billy-konto, der ikke bruges i produktion, og kontrollér selv alle regnskabsresultater og ændringer.
+
+          > **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Test with a non-production Billy account and independently verify every accounting result and change.'
           gh release create "$GITHUB_REF_NAME" "$RELEASE_ARCHIVE" SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
             --title "Billy Plugin $GITHUB_REF_NAME" \
