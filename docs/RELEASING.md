@@ -1,6 +1,6 @@
 # Releasing Billy Plugin
 
-Billy Plugin is released personally from `morphar/billy-plugin`. Official releases are fully local packages: the archive contains the plugin, accounting skill, configuration, OpenAPI contract, and a prebuilt macOS Apple Silicon executable.
+Billy Plugin is released personally from `morphar/billy-plugin`. Official beta releases are fully local packages: the archive contains the plugin, accounting skill, configuration, OpenAPI contract, and a prebuilt macOS Apple Silicon executable.
 
 ## One-time setup
 
@@ -25,17 +25,18 @@ Billy Plugin is released personally from `morphar/billy-plugin`. Official releas
 
    ```bash
    ./scripts/validate
-   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0 ./plugins/billy-plugin/scripts/build-macos-arm64
+   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0-beta.1 ./plugins/billy-plugin/scripts/build-macos-arm64
    ./scripts/validate
    ```
 
 4. Test installation from a clean directory with a non-production Billy account. Verify first-use Keychain setup, read-only defaults, multiple profiles, policy expansion, and a separately approved write followed by a read-back.
 5. Review the complete diff and merge it to `main`.
-6. Create and push an annotated tag matching the manifest's base version:
+6. Confirm the beta and AI-generated-code warning remains prominent in the root README, packaged plugin README, manifest, and release notes.
+7. Create and push an annotated tag matching the manifest's prerelease version:
 
    ```bash
-   git tag -a v0.1.0 -m "Billy Plugin v0.1.0"
-   git push origin v0.1.0
+   git tag -a v0.1.0-beta.1 -m "Billy Plugin v0.1.0-beta.1"
+   git push origin v0.1.0-beta.1
    ```
 
 The GitHub release workflow checks out the pinned api-mcp tag, builds the executable with Go 1.27, imports the Developer ID certificate into an ephemeral Keychain, signs the executable with the hardened runtime, submits the release archive to Apple's notarization service, and publishes the archive and checksum.
@@ -46,7 +47,7 @@ Download the published archive and checksum on another Mac:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-unzip billy-plugin_0.1.0_darwin-arm64.zip
+unzip billy-plugin_0.1.0-beta.1_darwin-arm64.zip
 codesign --verify --deep --strict --verbose=2 billy-plugin/plugins/billy-plugin/bin/darwin-arm64/billy-mcp
 ```
 

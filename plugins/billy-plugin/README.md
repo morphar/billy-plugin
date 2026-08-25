@@ -1,5 +1,8 @@
 # Billy Plugin
 
+> [!WARNING]
+> **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Automated tests, code signing, and notarization do not guarantee correct bookkeeping behavior. Test with a non-production Billy account, keep write tools disabled unless needed, and independently verify every accounting result and change.
+
 Billy Plugin is a local-first accounting plugin for ChatGPT desktop, Codex, and other MCP clients such as Claude. It bundles a Billy MCP server, a safe tool configuration, and an accounting workflow skill. The MCP executable runs locally and calls Billy directly; there is no hosted intermediary.
 
 This is an independent, unofficial project. It is not affiliated with, endorsed by, or sponsored by Billy.

@@ -1,7 +1,7 @@
 {
   "name": "billy-plugin",
-  "version": "0.1.0+codex.20260824145754",
-  "description": "Local-first Billy accounting tools and workflows for ChatGPT and Codex.",
+  "version": "0.1.0-beta.1",
+  "description": "Beta, AI-assisted local Billy accounting tools and workflows for ChatGPT and Codex.",
   "author": {
     "name": "Dan Larsen",
     "url": "https://github.com/morphar"
@@ -18,9 +18,9 @@
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "Billy Plugin",
-    "shortDescription": "Reconcile and review Billy locally",
-    "longDescription": "Local-first Billy accounting workflows with controlled per-account bookkeeping tools. The MCP process runs on your computer and keeps each Billy credential in a separate operating system Keychain item.",
+    "displayName": "Billy Plugin (Beta)",
+    "shortDescription": "Beta: Reconcile and review Billy locally",
+    "longDescription": "Experimental beta software generated substantially with AI assistance under human direction and review. Local-first Billy accounting workflows use controlled per-account bookkeeping tools. The MCP process runs on your computer and keeps each Billy credential in a separate operating system Keychain item. Independently verify all accounting results and changes.",
     "developerName": "Dan Larsen",
     "category": "Finance",
     "capabilities": [

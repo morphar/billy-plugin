@@ -1,14 +1,17 @@
 # Billy Plugin
 
+> [!WARNING]
+> **Beta / AI-generated code:** This is experimental beta software, and much of its code, documentation, and Billy OpenAPI contract was generated with AI assistance under human direction and review. Automated tests, code signing, and notarization do not guarantee correct bookkeeping behavior. Test with a non-production Billy account, keep write tools disabled unless needed, and independently verify every accounting result and change.
+
 Billy Plugin packages a fully local Billy MCP server together with an accounting workflow skill for ChatGPT desktop and Codex.
 
 The plugin does not use a hosted intermediary. Its standalone Go executable runs on the user's computer, reads the Billy credential from the local operating system credential store, calls Billy directly, and redacts exact credential values from model-visible responses and errors.
 
 This is an independent, unofficial project. It is not affiliated with, endorsed by, or sponsored by Billy.
 
-## Current release target
+## Current beta target
 
-The first release supports macOS on Apple Silicon. Users do not need Go or Node.js installed.
+The first beta release supports macOS on Apple Silicon. Users do not need Go or Node.js installed.
 
 The executable in a source checkout is an ad-hoc-signed development build. Official GitHub release archives are built from tagged api-mcp source, signed with an Apple Developer ID, submitted to Apple's notarization service, and published with checksums.
 
