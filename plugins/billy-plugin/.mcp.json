@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "billy-plugin": {
+      "command": "./bin/darwin-arm64/billy-mcp",
+      "args": [
+        "--config",
+        "./config/billy.json"
+      ],
+      "cwd": ".",
+      "env_vars": [
+        "BILLY_ACCESS_TOKEN"
+      ],
+      "startup_timeout_sec": 15,
+      "tool_timeout_sec": 120
+    }
+  }
+}

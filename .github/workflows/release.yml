@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.0"
+
+      - name: Check release inputs
+        shell: bash
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_DEVELOPER_ID_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.APPLE_NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for value in CERTIFICATE_P12 CERTIFICATE_PASSWORD NOTARY_APPLE_ID NOTARY_TEAM_ID NOTARY_PASSWORD; do
+            if [[ -z "${!value}" ]]; then
+              echo "Required release secret $value is not configured." >&2
+              exit 1
+            fi
+          done
+          version="${GITHUB_REF_NAME#v}"
+          manifest_version=$(python3 -c 'import json; print(json.load(open("plugins/billy-plugin/.codex-plugin/plugin.json"))["version"].split("+", 1)[0])')
+          if [[ "$version" != "$manifest_version" ]]; then
+            echo "Tag version $version does not match manifest version $manifest_version." >&2
+            exit 1
+          fi
+
+      - name: Check out pinned api-mcp source
+        shell: bash
+        run: |
+          set -euo pipefail
+          api_mcp_version=$(tr -d '[:space:]' < API_MCP_VERSION)
+          git clone --branch "$api_mcp_version" --depth 1 \
+            https://github.com/cortexium-io/api-mcp.git \
+            "$RUNNER_TEMP/api-mcp"
+          (cd "$RUNNER_TEMP/api-mcp" && GOTOOLCHAIN=go1.27.0 go test ./...)
+
+      - name: Import Developer ID certificate
+        shell: bash
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_DEVELOPER_ID_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_PASSWORD }}
+        run: |
+          set -euo pipefail
+          certificate_path="$RUNNER_TEMP/developer-id.p12"
+          keychain_path="$RUNNER_TEMP/billy-signing.keychain-db"
+          keychain_password=$(openssl rand -hex 24)
+          echo "KEYCHAIN_PATH=$keychain_path" >> "$GITHUB_ENV"
+          echo "CERTIFICATE_PATH=$certificate_path" >> "$GITHUB_ENV"
+          printf '%s' "$CERTIFICATE_P12" | base64 -D > "$certificate_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$keychain_password" "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+          identity=$(security find-identity -v -p codesigning "$keychain_path" \
+            | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' \
+            | head -1)
+          if [[ -z "$identity" ]]; then
+            echo "The certificate does not contain a Developer ID Application identity." >&2
+            exit 1
+          fi
+          echo "SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+
+      - name: Build and sign
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          API_MCP_SOURCE="$RUNNER_TEMP/api-mcp" VERSION="$version" GOTOOLCHAIN=go1.27.0 \
+            ./plugins/billy-plugin/scripts/build-macos-arm64
+          codesign --force --options runtime --timestamp \
+            --sign "$SIGNING_IDENTITY" \
+            plugins/billy-plugin/bin/darwin-arm64/billy-mcp
+          codesign --verify --strict --verbose=2 \
+            plugins/billy-plugin/bin/darwin-arm64/billy-mcp
+          (
+            cd plugins/billy-plugin
+            shasum -a 256 bin/darwin-arm64/billy-mcp > SHA256SUMS
+          )
+          ./scripts/validate
+
+      - name: Package and notarize
+        shell: bash
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.APPLE_NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          stage="$RUNNER_TEMP/billy-plugin"
+          archive="$GITHUB_WORKSPACE/billy-plugin_${version}_darwin-arm64.zip"
+          mkdir -p "$stage"
+          ditto .agents "$stage/.agents"
+          ditto plugins "$stage/plugins"
+          cp README.md LICENSE PRIVACY.md SECURITY.md SUPPORT.md "$stage/"
+          python3 - "$stage/plugins/billy-plugin/.codex-plugin/plugin.json" "$version" <<'PY'
+          import json
+          import pathlib
+          import sys
+          path = pathlib.Path(sys.argv[1])
+          manifest = json.loads(path.read_text())
+          manifest["version"] = sys.argv[2]
+          path.write_text(json.dumps(manifest, indent=2) + "\n")
+          PY
+          (
+            cd "$stage/plugins/billy-plugin"
+            shasum -a 256 bin/darwin-arm64/billy-mcp > SHA256SUMS
+          )
+          ditto -c -k --sequesterRsrc --keepParent "$stage" "$archive"
+          xcrun notarytool submit "$archive" \
+            --apple-id "$NOTARY_APPLE_ID" \
+            --team-id "$NOTARY_TEAM_ID" \
+            --password "$NOTARY_PASSWORD" \
+            --wait
+          shasum -a 256 "$(basename "$archive")" > SHA256SUMS
+          echo "RELEASE_ARCHIVE=$archive" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then prerelease+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "$RELEASE_ARCHIVE" SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Billy Plugin $GITHUB_REF_NAME" \
+            --generate-notes \
+            "${prerelease[@]}"
+
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${KEYCHAIN_PATH:-}" && -f "$KEYCHAIN_PATH" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
+          if [[ -n "${CERTIFICATE_PATH:-}" && -f "$CERTIFICATE_PATH" ]]; then
+            rm -f "$CERTIFICATE_PATH"
+          fi

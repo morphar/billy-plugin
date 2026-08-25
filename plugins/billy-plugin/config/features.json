@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "read-only",
+      "title": "Read-only Billy access",
+      "description": "Read and search Billy records without creating, updating, or deleting anything.",
+      "risk": "read",
+      "endpoints": [
+        "GET *"
+      ]
+    },
+    {
+      "id": "bank-payments",
+      "title": "Create and update bank payments",
+      "description": "Create bank-payment records and update existing bank-payment records. It does not enable deleting bank payments.",
+      "risk": "write",
+      "endpoints": [
+        "create_bank_payment",
+        "update_bank_payment"
+      ]
+    },
+    {
+      "id": "bank-reconciliation",
+      "title": "Manage bank-line reconciliation",
+      "description": "Create, update, and delete bank-line matches and bank-line subject associations used to reconcile Billy postings with imported bank lines.",
+      "risk": "write",
+      "endpoints": [
+        "create_bank_line_match",
+        "update_bank_line_match",
+        "delete_bank_line_match",
+        "create_bank_line_subject_association",
+        "update_bank_line_subject_association",
+        "delete_bank_line_subject_association"
+      ]
+    },
+    {
+      "id": "daybook-corrections",
+      "title": "Create and update daybook corrections",
+      "description": "Create and update daybook transactions and their lines for controlled accounting corrections. It does not enable deleting daybook records.",
+      "risk": "write",
+      "endpoints": [
+        "create_daybook_transaction",
+        "update_daybook_transaction",
+        "create_daybook_transaction_line",
+        "update_daybook_transaction_line"
+      ]
+    }
+  ]
+}

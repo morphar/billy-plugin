@@ -1,0 +1,38 @@
+{
+  "name": "billy-plugin",
+  "version": "0.1.0+codex.20260824145754",
+  "description": "Local-first Billy accounting tools and workflows for ChatGPT and Codex.",
+  "author": {
+    "name": "Dan Larsen",
+    "url": "https://github.com/morphar"
+  },
+  "homepage": "https://github.com/morphar/billy-plugin",
+  "repository": "https://github.com/morphar/billy-plugin",
+  "license": "MIT",
+  "keywords": [
+    "accounting",
+    "billy",
+    "bookkeeping",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Billy Plugin",
+    "shortDescription": "Reconcile and review Billy locally",
+    "longDescription": "Local-first Billy accounting workflows with controlled per-account bookkeeping tools. The MCP process runs on your computer and keeps each Billy credential in a separate operating system Keychain item.",
+    "developerName": "Dan Larsen",
+    "category": "Finance",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Review my unreconciled Billy bank lines.",
+      "Gennemg\u00e5 mine uafstemte banklinjer i Billy.",
+      "Forklar forskellen mellem min bank- og bogf\u00f8ringssaldo."
+    ],
+    "brandColor": "#213547"
+  }
+}

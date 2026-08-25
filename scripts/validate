@@ -1,0 +1,70 @@
+#!/bin/sh
+set -eu
+
+repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+plugin_dir="$repository_root/plugins/billy-plugin"
+
+python3 - "$repository_root" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+marketplace_path = root / ".agents/plugins/marketplace.json"
+manifest_path = root / "plugins/billy-plugin/.codex-plugin/plugin.json"
+mcp_path = root / "plugins/billy-plugin/.mcp.json"
+config_path = root / "plugins/billy-plugin/config/billy.json"
+features_path = root / "plugins/billy-plugin/config/features.json"
+
+documents = {}
+for path in (marketplace_path, manifest_path, mcp_path, config_path, features_path):
+    documents[path] = json.loads(path.read_text())
+
+marketplace = documents[marketplace_path]
+manifest = documents[manifest_path]
+mcp = documents[mcp_path]
+config = documents[config_path]
+features = documents[features_path]
+
+assert marketplace["name"] == "billy"
+assert marketplace["plugins"][0]["name"] == manifest["name"] == "billy-plugin"
+assert marketplace["plugins"][0]["source"]["path"] == "./plugins/billy-plugin"
+assert manifest["license"] == "MIT"
+assert manifest["mcpServers"] == "./.mcp.json"
+assert manifest["skills"] == "./skills/"
+assert "billy-plugin" in mcp["mcpServers"]
+assert config["toolPolicy"]["defaultFeatures"] == ["read-only"]
+assert config["auth"]["keychain"]["promptOnMissing"] is True
+assert "read-only" in {feature["id"] for feature in features["features"]}
+assert next(feature for feature in features["features"] if feature["id"] == "read-only")["endpoints"] == ["GET *"]
+
+for relative in (
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "bin/darwin-arm64/billy-mcp",
+    "config/billy.json",
+    "config/features.json",
+    "openapi/billy.yaml",
+    "skills/accounting/SKILL.md",
+):
+    assert (root / "plugins/billy-plugin" / relative).is_file(), relative
+
+print("plugin structure: ok")
+PY
+
+for script in "$repository_root"/scripts/* "$plugin_dir"/scripts/* "$plugin_dir"/*.command; do
+  [ -f "$script" ] || continue
+  sh -n "$script"
+done
+
+(
+  cd "$plugin_dir"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 -c SHA256SUMS
+  else
+    sha256sum -c SHA256SUMS
+  fi
+)
+
+echo "release package: ok"

@@ -1,0 +1,9 @@
+.DS_Store
+.env
+*.local.json
+dist/
+tmp/
+*.p12
+*.p8
+*.certSigningRequest
+*.developerprofile

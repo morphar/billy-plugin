@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+plugin_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+default_api_mcp_source=$(CDPATH= cd -- "$plugin_dir/../../.." && pwd)/api-mcp
+api_mcp_source=${API_MCP_SOURCE:-$default_api_mcp_source}
+version=${VERSION:-dev}
+
+if [ ! -f "$api_mcp_source/go.mod" ]; then
+  echo "api-mcp source not found at $api_mcp_source" >&2
+  echo "Set API_MCP_SOURCE to the generic api-mcp repository." >&2
+  exit 1
+fi
+
+mkdir -p "$plugin_dir/bin/darwin-arm64"
+
+GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 \
+  VERSION="$version" \
+  OUTPUT="$plugin_dir/bin/darwin-arm64/billy-mcp" \
+  "$api_mcp_source/scripts/build"
+
+(
+  cd "$plugin_dir"
+  shasum -a 256 bin/darwin-arm64/billy-mcp > SHA256SUMS
+)

@@ -1,0 +1,20 @@
+{
+  "name": "billy",
+  "interface": {
+    "displayName": "Billy"
+  },
+  "plugins": [
+    {
+      "name": "billy-plugin",
+      "source": {
+        "source": "local",
+        "path": "./plugins/billy-plugin"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Finance"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "billy-plugin",
+  "spec": "../openapi/billy.yaml",
+  "auth": {
+    "type": "apiKey",
+    "in": "headers",
+    "name": "X-Access-Token",
+    "valueEnv": "BILLY_ACCESS_TOKEN",
+    "keychain": {
+      "service": "com.morphar.billy-plugin",
+      "account": "default",
+      "promptOnMissing": true
+    }
+  },
+  "headers": {
+    "User-Agent": "billy-plugin/0.1.0"
+  },
+  "toolPolicy": {
+    "userConfigDirectory": "Billy Plugin",
+    "userConfigFile": "config.json",
+    "catalog": "./features.json",
+    "defaultFeatures": [
+      "read-only"
+    ]
+  },
+  "profiles": {
+    "registryFile": "accounts.json",
+    "defaultProfileId": "default",
+    "defaultProfileName": "Default Billy account"
+  },
+  "maxResponseChars": 20000
+}
