@@ -4,6 +4,17 @@ set -eu
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 plugin_dir="$repository_root/plugins/billy-plugin"
 
+api_mcp_version=$(tr -d '[:space:]' < "$repository_root/API_MCP_VERSION")
+api_mcp_commit=$(tr -d '[:space:]' < "$repository_root/API_MCP_COMMIT")
+if ! printf '%s\n' "$api_mcp_version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+  echo "API_MCP_VERSION must contain a v-prefixed semantic version tag" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$api_mcp_commit" | grep -Eq '^[0-9a-f]{40}$'; then
+  echo "API_MCP_COMMIT must contain exactly one full lowercase Git commit hash" >&2
+  exit 1
+fi
+
 python3 - "$repository_root" <<'PY'
 import json
 import pathlib
@@ -15,6 +26,9 @@ manifest_path = root / "plugins/billy-plugin/.codex-plugin/plugin.json"
 mcp_path = root / "plugins/billy-plugin/.mcp.json"
 config_path = root / "plugins/billy-plugin/config/billy.json"
 features_path = root / "plugins/billy-plugin/config/features.json"
+notices_path = root / "plugins/billy-plugin/THIRD_PARTY_NOTICES.md"
+api_mcp_version = (root / "API_MCP_VERSION").read_text().strip()
+api_mcp_commit = (root / "API_MCP_COMMIT").read_text().strip()
 
 documents = {}
 for path in (marketplace_path, manifest_path, mcp_path, config_path, features_path):
@@ -37,6 +51,9 @@ assert config["toolPolicy"]["defaultFeatures"] == ["read-only"]
 assert config["auth"]["keychain"]["promptOnMissing"] is True
 assert "read-only" in {feature["id"] for feature in features["features"]}
 assert next(feature for feature in features["features"] if feature["id"] == "read-only")["endpoints"] == ["GET *"]
+notices = notices_path.read_text()
+assert api_mcp_version in notices
+assert api_mcp_commit in notices
 
 for relative in (
     "LICENSE",

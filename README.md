@@ -53,9 +53,11 @@ codex plugin add billy-plugin@billy
 
 The first MCP start automatically creates `~/Library/Application Support/Billy Plugin/config.json` with only the named `read-only` feature enabled. No create, update, or delete endpoint is available by default.
 
-ChatGPT, Codex, or Claude can explain and manage this policy through `get_tool_configuration`, `list_tool_features`, `search_available_tools`, and the single mutating configuration tool, `configure_tools`. Configuration changes are validated against the bundled OpenAPI contract, persisted locally, and applied to the live MCP tool list. The accounting skill requires an explanation and explicit confirmation before access is expanded or reduced.
+ChatGPT, Codex, or Claude can explain and manage this policy through `get_tool_configuration`, `list_tool_features`, `search_available_tools`, and the single mutating configuration tool, `configure_tools`. Configuration changes are validated against the bundled OpenAPI contract, then a native macOS dialog shows the selected account, requested change, and resulting policy. Only local approval lets the MCP persist and apply the change; a model cannot approve it by passing a flag.
 
-Multiple Billy accounts are managed by one local MCP process. `list_api_profiles`, `add_api_profile`, `rename_api_profile`, and `remove_api_profile` manage a token-free local registry. Each profile has its own Keychain item and read-only-by-default tool policy, and API calls require an explicit profile whenever more than one account exists. Existing `default` credentials and settings migrate in place.
+Multiple Billy accounts are managed by one local MCP process. `list_api_profiles`, `add_api_profile`, `rename_api_profile`, and `remove_api_profile` manage a token-free local registry. Profile changes require the same local native approval. Each profile has its own Keychain item and read-only-by-default tool policy, and API calls require an explicit profile whenever more than one account exists. Existing `default` credentials and settings migrate in place.
+
+Every Billy create, update, or delete request is validated and checked against the selected profile's policy, then displayed in a native macOS approval dialog before the token is read and before Billy is contacted. Read-only Billy requests do not show this dialog. Credential setup continues to use a separate hidden-input dialog.
 
 The plugin metadata remains in English because the current manifest has one description field rather than locale-specific variants. The bundled starter prompts and documentation include Danish examples, so Danish requests work naturally in ChatGPT, Codex, and Claude.
 
@@ -71,7 +73,7 @@ The plugin metadata remains in English because the current manifest has one desc
 
 ## Maintainer build
 
-The generic MCP engine currently lives in a sibling `api-mcp` checkout. Rebuild the macOS executable with:
+The generic MCP engine currently lives in a sibling `api-mcp` checkout. Its clean `HEAD` must match the full hash in `API_MCP_COMMIT`. Rebuild the macOS executable with:
 
 ```bash
 ./plugins/billy-plugin/scripts/build-macos-arm64

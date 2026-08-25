@@ -63,7 +63,7 @@ The MCP exposes four configuration tools:
 - `search_available_tools` searches and explains individual endpoints and reports whether each is enabled for the selected profile.
 - `configure_tools` adds or removes named features or individual endpoint selectors for the selected profile, saves the user-local file atomically, and refreshes the live MCP tool list.
 
-`configure_tools` is the only configuration-changing tool. The bundled accounting skill instructs the assistant to explain the exact access change and obtain explicit confirmation before calling it, especially when enabling writes. Changing tool availability does not authorize an accounting write; live bookkeeping changes still require their own explicit approval and post-write verification.
+`configure_tools` is the only configuration-changing tool. The bundled accounting skill still requires the assistant to explain the exact access change. Independently, the MCP opens a native macOS approval dialog showing the selected profile, requested change, and resulting policy before it writes anything. The client or model cannot bypass that dialog with a confirmation flag. Changing tool availability does not authorize an accounting write; live bookkeeping changes require their own native approval and post-write verification.
 
 Example requests:
 
@@ -124,7 +124,7 @@ This registry never contains tokens. New profile tokens use Keychain accounts su
 Account tools:
 
 - `list_api_profiles` lists profiles, credential availability, policy paths, and enabled endpoint counts without reading token values into chat.
-- `add_api_profile` creates a profile and immediately opens the native secure token dialog. A new ID starts read-only; reusing a previously removed ID restores its preserved policy if that policy file was not deleted.
+- `add_api_profile` creates a profile and immediately opens the native secure token dialog. A new ID starts read-only. Reusing an ID with a preserved policy is rejected unless `restoreToolConfiguration: true` is requested explicitly and approved in the native dialog.
 - `rename_api_profile` changes only the friendly name.
 - `remove_api_profile` removes a profile; optional flags separately control permanent deletion of its Keychain credential and policy file. At least one profile must remain.
 - `api_mcp_credential_status` and `api_mcp_setup_credential` operate on the selected profile.
@@ -147,7 +147,9 @@ Eksempler på dansk:
 
 There is deliberately no mutable global active account. When more than one profile exists, Billy API tools require the `profile` ID. Tool results also identify the profile used. This prevents one chat or accounting operation from silently switching another account.
 
-The MCP tool list is shared across profiles. If a write tool is enabled for one profile, it is visible globally, but the server rejects it for every profile whose own policy does not allow it before making an HTTP request.
+The MCP tool list is shared across profiles. If a write tool is enabled for one profile, it is visible globally, but the server rejects it for every profile whose own policy does not allow it before reading a credential or making an HTTP request.
+
+Every Billy create, update, or delete request is validated against the bundled OpenAPI operation, checked against the selected profile's policy, and shown in a native macOS approval dialog with its exact arguments and Billy destination. Billy credentials are read only after approval. Read-only Billy calls remain non-interactive apart from first-use credential setup.
 
 Changes made through profile and configuration tools update the current MCP process immediately. Restart another already-running MCP client after changing profiles or policies from ChatGPT, Codex, Claude, or a manual file edit so that client reloads the registry.
 

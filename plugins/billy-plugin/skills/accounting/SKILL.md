@@ -10,11 +10,11 @@ description: Review and reconcile Billy accounting data, propose entries, assess
 - Use the bundled Billy MCP as the source of live bookkeeping data.
 - Never ask the user to paste a Billy token into chat or pass it as a tool argument. The local MCP reads it from the operating system credential store.
 - Call `list_api_profiles` when the intended Billy account is not already unambiguous. When multiple profiles exist, pass the stable `profile` ID on every Billy API call. Never infer a profile from record IDs or reuse IDs read from another profile.
-- `add_api_profile` creates a separate profile and opens the native macOS secure-input dialog for that account's token. New IDs start read-only; reusing a removed ID may restore its preserved policy, so inspect the returned state. Before calling it, explain what will be created and obtain explicit confirmation. Use `rename_api_profile` for display names. Before `remove_api_profile`, explain whether its Keychain credential and tool-policy file will also be deleted and obtain explicit confirmation.
+- `add_api_profile` creates a separate profile and opens the native macOS secure-input dialog for that account's token. New IDs start read-only. A removed ID with a preserved policy requires `restoreToolConfiguration: true`; explain that restoration explicitly and never set it by default. Profile mutations also open a native local approval dialog. Use `rename_api_profile` for display names. Before `remove_api_profile`, explain whether its Keychain credential and tool-policy file will also be deleted.
 - If credentials are missing, call `api_mcp_setup_credential` with the intended `profile` and tell the user to complete the native dialog. After success, retry the original Billy read. Use the plugin's local setup command only for the default profile when the setup tool is unavailable. Do not attempt to retrieve or display a stored credential.
 - Use `api_mcp_credential_status` only to check the selected profile's credential availability; its result must never contain credential material.
 - Each new profile ID starts with only the `read-only` feature enabled. Use `get_tool_configuration`, `list_tool_features`, and `search_available_tools` with the intended `profile` to inspect or explain its permissions.
-- `configure_tools` is the only MCP tool that may change a profile's tool availability. Before calling it, identify the exact profile, explain the exact features or endpoints that will be added or removed, call out any write capability, and obtain the user's explicit confirmation. If the request is ambiguous, use the read-only discovery tools first.
+- `configure_tools` is the only MCP tool that may change a profile's tool availability. Before calling it, identify the exact profile, explain the exact features or endpoints that will be added or removed, and call out any write capability. The MCP then requires approval in a native local dialog showing the resulting policy. If the request is ambiguous, use the read-only discovery tools first.
 - Enabling a feature or endpoint only changes which MCP tools are available. It is a technical ceiling, not blanket authorization to change live bookkeeping data; the per-operation approval and verification rules below still apply.
 
 ## Operating Principles
@@ -28,6 +28,7 @@ Treat accounting records as production financial data.
 - Do not invent account IDs, tax rates, supplier IDs, invoice IDs, bank-line IDs, or legal/tax rules.
 - Do not mutate live accounting data until the discrepancy, plan, and user approval are clear.
 - Before every live write, restate the target Billy profile name and stable ID together with the intended bookkeeping change. Treat a profile mismatch as a hard stop.
+- Expect the local MCP to show the exact validated write in a native macOS approval dialog. Cancellation means no credential is read and no Billy request is sent; do not retry unless the user asks.
 - Stop and ask before changing submitted VAT/sales-tax periods, filed years, payroll, tax filings, locked periods, loans, equity, or materially uncertain tax treatment.
 
 ## First Pass
