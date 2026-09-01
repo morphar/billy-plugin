@@ -53,7 +53,7 @@ Download the published archive and checksum on another Mac:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-unzip billy-plugin_0.1.0-beta.1_darwin-arm64.zip
+unzip billy-plugin_0.1.0-beta.3_darwin-arm64.zip
 codesign --verify --deep --strict --verbose=2 billy-plugin/plugins/billy-plugin/bin/darwin-arm64/billy-mcp
 ```
 
