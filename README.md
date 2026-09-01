@@ -81,12 +81,14 @@ The plugin metadata remains in English because the current manifest has one desc
 - `plugins/billy-plugin/.codex-plugin/plugin.json` defines the installable plugin.
 - `plugins/billy-plugin/.mcp.json` starts the local MCP over stdio.
 - `plugins/billy-plugin/skills/accounting` contains the accounting workflow and safety policy.
+- `cmd/billy-mcp` and `internal/billyworkflow` contain the fixed review and guarded cleanup tools layered on api-mcp.
 - `plugins/billy-plugin/config/billy.json` defines the immutable local server settings; `config/features.json` explains the supported feature groups; the active user policy lives outside the plugin cache.
+- `plugins/billy-plugin/evals` records session-derived accounting regressions that must remain covered by the skill or executable tests.
 - `plugins/billy-plugin/bin` contains release executables, never credentials.
 
 ## Maintainer build
 
-The generic MCP engine currently lives in a sibling `api-mcp` checkout. Its clean `HEAD` must match the full hash in `API_MCP_COMMIT`. Rebuild the macOS executable with:
+The shared MCP engine currently lives in a sibling `api-mcp` checkout. Its clean `HEAD` must match the full hash in `API_MCP_COMMIT`. The build compiles the Billy-specific command from this repository against that exact engine commit:
 
 ```bash
 ./plugins/billy-plugin/scripts/build-macos-arm64

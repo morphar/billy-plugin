@@ -78,12 +78,14 @@ Pluginmetadata er på engelsk, fordi det nuværende manifest kun har ét beskriv
 - `plugins/billy-plugin/.codex-plugin/plugin.json` definerer det plugin, der kan installeres.
 - `plugins/billy-plugin/.mcp.json` starter den lokale MCP over stdio.
 - `plugins/billy-plugin/skills/accounting` indeholder arbejdsgangen og sikkerhedspolitikken for bogføring.
+- `cmd/billy-mcp` og `internal/billyworkflow` indeholder de faste review- og beskyttede cleanup-værktøjer oven på api-mcp.
 - `plugins/billy-plugin/config/billy.json` definerer serverens uforanderlige lokale indstillinger. `config/features.json` forklarer de understøttede funktionsgrupper, mens den aktive brugerpolitik ligger uden for plugin-cachen.
+- `plugins/billy-plugin/evals` indeholder sessionsbaserede regnskabsregressioner, som fortsat skal være dækket af skillen eller eksekverbare tests.
 - `plugins/billy-plugin/bin` indeholder releaseprogrammer, aldrig legitimationsoplysninger.
 
 ## Build for vedligeholdere
 
-Den generiske MCP-motor ligger i øjeblikket i et parallelt `api-mcp`-checkout. Dets rene `HEAD` skal svare til det fulde hash i `API_MCP_COMMIT`. Byg macOS-programmet igen med:
+Den fælles MCP-motor ligger i øjeblikket i et parallelt `api-mcp`-checkout. Dets rene `HEAD` skal svare til det fulde hash i `API_MCP_COMMIT`. Buildet kompilerer den Billy-specifikke kommando i dette repository mod præcis den fastlåste motor-commit:
 
 ```bash
 ./plugins/billy-plugin/scripts/build-macos-arm64

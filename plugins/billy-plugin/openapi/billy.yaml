@@ -6131,6 +6131,16 @@ paths:
         - "DaybookBalanceAccounts"
       parameters:
         -
+          name: "daybookId"
+          in: "query"
+          required: true
+          description: "ID of the daybook whose balance accounts should be listed. Billy rejects this collection request when daybookId is omitted."
+          schema:
+            type: "string"
+            minLength: 1
+          x-source: "Observed Billy API validation response"
+          x-confidence: "medium"
+        -
           name: "include"
           in: "query"
           required: false
@@ -15082,6 +15092,36 @@ components:
         side:
           type: "string"
           description: "Notes: required."
+        status:
+          type: "string"
+          readOnly: true
+          description: "Billy processing status observed on imported bank lines. A value such as `booked` does not by itself prove that the related bank-line match is approved or fully reconciled."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        provider:
+          type: "string"
+          readOnly: true
+          description: "Import or bank-feed provider identifier observed on bank lines. Use together with externalId and groupId when detecting duplicate imports."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        externalId:
+          type: "string"
+          readOnly: true
+          description: "Provider-supplied bank-line identifier observed on imported records. It is not guaranteed to be globally unique across providers or import groups."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        groupId:
+          type: "string"
+          readOnly: true
+          description: "Import-group identifier observed on bank lines. Use it as evidence when previewing cleanup of an accidental import."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        balance:
+          type: "number"
+          readOnly: true
+          description: "Running bank balance supplied with the imported bank line when available. Same-day order should be reconstructed from this value rather than API list order."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
       x-source: "https://www.billy.dk/api/#v2banklines"
       x-confidence: "medium"
       x-review-note: "Schema generated from the documented resource property table. Enum values and relationship expansion shapes are only included where the docs state them directly."
@@ -18657,6 +18697,45 @@ components:
           type: "boolean"
           description: "Notes: readonly."
           readOnly: true
+        isPayable:
+          type: "boolean"
+          readOnly: true
+          description: "Whether the return represents an amount payable rather than receivable, as observed in live Billy responses."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        totalAmount:
+          type: "number"
+          readOnly: true
+          description: "Net amount for the VAT/sales-tax return. Validate the individual report fields as well as this total."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        settledAmount:
+          type: "number"
+          readOnly: true
+          description: "Amount marked as settled in Billy. This does not by itself prove tax-authority payment or bank reconciliation."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        paymentDate:
+          type: "string"
+          format: "date"
+          readOnly: true
+          description: "Payment or settlement date exposed by Billy when available."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        skatTransactionId:
+          type: "string"
+          readOnly: true
+          description: "SKAT transaction identifier exposed by Billy for supported connected submissions. It can be absent for a manually filed return."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
+        report:
+          type: "object"
+          additionalProperties:
+            type: "number"
+          readOnly: true
+          description: "Field-by-field VAT/sales-tax report amounts exposed by Billy. Review these values individually; offsetting errors can leave totalAmount unchanged."
+          x-source: "Observed Billy API response"
+          x-confidence: "medium"
       x-source: "https://www.billy.dk/api/#v2salestaxreturns"
       x-confidence: "medium"
       x-review-note: "Schema generated from the documented resource property table. Enum values and relationship expansion shapes are only included where the docs state them directly."

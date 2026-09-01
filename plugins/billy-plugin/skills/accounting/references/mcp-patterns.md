@@ -20,6 +20,8 @@ Never reuse IDs from another company or prior session unless just re-read from t
 
 When list tools are paginated, use smaller page sizes if responses truncate. Some MCP wrappers cap returned text even when the API supports large pages.
 
+Record `page`, `pageSize`, returned-record count, total/page metadata when available, and `truncated` for every collection. Continue until the API proves the final page. If the wrapper truncates JSON, discard the partial body and retry with a smaller page size; never infer from a partial payload.
+
 ## Balance Calculation
 
 For asset bank/card accounts:
@@ -114,6 +116,8 @@ Accounting APIs may contain duplicate bank lines from multiple imports/providers
 - Do not create multiple accounting entries for duplicate representations of the same real movement.
 - Report duplicate unapproved matches as import cleanup candidates.
 
+For destructive cleanup, separate preview from commit. The preview must include exact line IDs, provider/group/external IDs, dates, descriptions, amounts, running balances, match/association state, count, signed sum, and a deterministic digest. Commit must re-read every target, reject changed or associated targets, and require one approval for the complete batch.
+
 ## Guard Checks Before Writes
 
 Before creating a correction:
@@ -135,3 +139,5 @@ Always re-read and verify:
 - `taxRateId` and VAT/sales-tax return linkage
 - void state of replaced records
 - remaining unmatched or excluded items
+
+For a multi-record operation, also verify the preview digest, attempted/succeeded/skipped/failed counts, per-record result, idempotent retry behavior, and the final aggregate balance. Never report the batch complete when only the individual API requests succeeded.

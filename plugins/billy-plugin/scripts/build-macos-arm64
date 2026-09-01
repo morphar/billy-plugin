@@ -7,6 +7,8 @@ default_api_mcp_source=$(CDPATH= cd -- "$plugin_dir/../../.." && pwd)/api-mcp
 api_mcp_source=${API_MCP_SOURCE:-$default_api_mcp_source}
 version=${VERSION:-dev}
 expected_api_mcp_commit=$(tr -d '[:space:]' < "$repository_root/API_MCP_COMMIT")
+build_commit=${COMMIT:-$(git -C "$repository_root" rev-parse --short=12 HEAD 2>/dev/null || printf unknown)}
+build_date=${BUILD_DATE:-$(git -C "$repository_root" show -s --format=%cI HEAD 2>/dev/null || printf unknown)}
 
 if [ ! -f "$api_mcp_source/go.mod" ]; then
   echo "api-mcp source not found at $api_mcp_source" >&2
@@ -26,10 +28,18 @@ fi
 
 mkdir -p "$plugin_dir/bin/darwin-arm64"
 
+temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/billy-mcp-build.XXXXXX")
+trap 'rm -rf "$temporary_dir"' EXIT HUP INT TERM
+cp "$repository_root/go.mod" "$temporary_dir/billy.mod"
+cp "$repository_root/go.sum" "$temporary_dir/billy.sum"
+go mod edit -modfile="$temporary_dir/billy.mod" -replace="github.com/cortexium-io/api-mcp=$api_mcp_source"
+
 GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 \
-  VERSION="$version" \
-  OUTPUT="$plugin_dir/bin/darwin-arm64/billy-mcp" \
-  "$api_mcp_source/scripts/build"
+  go build -trimpath \
+  -modfile="$temporary_dir/billy.mod" \
+  -ldflags "-s -w -X github.com/cortexium-io/api-mcp/internal/apimcp.DefaultVersion=$(cat "$repository_root/API_MCP_VERSION") -X main.version=$version -X main.commit=$build_commit -X main.buildDate=$build_date" \
+  -o "$plugin_dir/bin/darwin-arm64/billy-mcp" \
+  "$repository_root/cmd/billy-mcp"
 
 (
   cd "$plugin_dir"

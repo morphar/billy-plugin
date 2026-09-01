@@ -133,7 +133,7 @@ jobs:
             cd plugins/billy-plugin
             shasum -a 256 bin/darwin-arm64/billy-mcp > SHA256SUMS
           )
-          ./scripts/validate
+          API_MCP_SOURCE="$RUNNER_TEMP/api-mcp" ./scripts/validate
 
       - name: Package and notarize
         shell: bash

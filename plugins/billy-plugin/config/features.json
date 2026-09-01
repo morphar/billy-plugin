@@ -21,6 +21,20 @@
       ]
     },
     {
+      "id": "purchase-bookkeeping",
+      "title": "Create and update purchases and attachments",
+      "description": "Create and update supplier bills, bill lines, and linked attachments. Payment creation remains controlled by the separate bank-payments feature. This feature does not enable deleting purchase records.",
+      "risk": "write",
+      "endpoints": [
+        "create_bill",
+        "update_bill",
+        "create_bill_line",
+        "update_bill_line",
+        "create_attachment",
+        "update_attachment"
+      ]
+    },
+    {
       "id": "bank-reconciliation",
       "title": "Manage bank-line reconciliation",
       "description": "Create, update, and delete bank-line matches and bank-line subject associations used to reconcile Billy postings with imported bank lines.",
@@ -35,6 +49,15 @@
       ]
     },
     {
+      "id": "duplicate-bank-line-cleanup",
+      "title": "Delete reviewed duplicate bank lines",
+      "description": "Delete exact duplicate bank-line IDs only after the fixed preview/commit workflow has re-read and verified the unchanged plan. It does not enable deleting matches, associations, payments, or bookkeeping records.",
+      "risk": "write",
+      "endpoints": [
+        "delete_bank_line"
+      ]
+    },
+    {
       "id": "daybook-corrections",
       "title": "Create and update daybook corrections",
       "description": "Create and update daybook transactions and their lines for controlled accounting corrections. It does not enable deleting daybook records.",
@@ -44,6 +67,17 @@
         "update_daybook_transaction",
         "create_daybook_transaction_line",
         "update_daybook_transaction_line"
+      ]
+    },
+    {
+      "id": "sales-tax-settlement",
+      "title": "Manage Billy VAT return settlement",
+      "description": "Update Billy VAT/sales-tax return settlement state and create or update Billy sales-tax payment records. This does not submit a return to SKAT or another tax authority.",
+      "risk": "write",
+      "endpoints": [
+        "update_sales_tax_return",
+        "create_sales_tax_payment",
+        "update_sales_tax_payment"
       ]
     }
   ]

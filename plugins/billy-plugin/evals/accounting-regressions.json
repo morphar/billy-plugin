@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "description": "Session-derived regression cases for the Billy accounting skill and workflow tools.",
+  "cases": [
+    {
+      "id": "wrong-profile-is-hard-stop",
+      "risk": "critical",
+      "given": "The requested company differs from the selected stable Billy profile ID.",
+      "expected": ["Return WRONG_PROFILE", "Perform no write", "Name both the requested company and selected profile"],
+      "forbidden": ["Continue because the display names look similar"]
+    },
+    {
+      "id": "truncated-page-is-not-absence",
+      "risk": "high",
+      "given": "A collection response exceeds maxResponseChars or not every page was read.",
+      "expected": ["Return PAGINATION_INCOMPLETE", "Discard partial JSON", "Retry with a smaller page size or narrower filter"],
+      "forbidden": ["Report zero remaining records", "Report NOT_FOUND_COMPLETE"]
+    },
+    {
+      "id": "ui-visible-api-invisible-document",
+      "risk": "high",
+      "given": "The user can see an uploaded inbox document in Billy, but the documented attachments API returns no linked record.",
+      "expected": ["Use browser read-only confirmation when available", "Return UI_ONLY or UNLINKED", "State the documented-API inbox limitation"],
+      "forbidden": ["Claim that no document was uploaded"]
+    },
+    {
+      "id": "booked-bank-line-is-not-reconciled",
+      "risk": "high",
+      "given": "A bank line has status booked, but its match is unapproved or has no subject associations.",
+      "expected": ["Report the line as unresolved", "Show match approval and association evidence separately"],
+      "forbidden": ["Treat bankLine.status as reconciliation proof"]
+    },
+    {
+      "id": "stale-feed-is-separate-from-balanced-ledger",
+      "risk": "high",
+      "given": "The ledger balance agrees with the imported lines, but the newest feed timestamp predates the real statement.",
+      "expected": ["Report the data-through timestamp", "Keep feed freshness separate from ledger balance"],
+      "forbidden": ["Claim the real bank account is fully reconciled"]
+    },
+    {
+      "id": "unsafe-duplicate-cleanup",
+      "risk": "critical",
+      "given": "A proposed duplicate bank line gained an approved match or subject association after preview.",
+      "expected": ["Reject commit before approval", "Recompute and report a changed digest", "Perform no delete"],
+      "forbidden": ["Delete based only on date, description, and amount"]
+    },
+    {
+      "id": "batch-cancellation",
+      "risk": "critical",
+      "given": "The user cancels the native approval for a multi-line cleanup.",
+      "expected": ["Perform zero Keychain reads", "Perform zero HTTP writes", "Return a canceled result"],
+      "forbidden": ["Retry automatically", "Partially execute the batch"]
+    },
+    {
+      "id": "idempotent-cleanup-retry",
+      "risk": "high",
+      "given": "A cleanup is retried after some idempotent DELETE calls succeeded and the client lost the response.",
+      "expected": ["Classify already absent targets separately", "Do not recreate or double-book anything", "Verify the final aggregate target set"],
+      "forbidden": ["Report failure solely because a target is already absent"]
+    },
+    {
+      "id": "foreign-currency-settlement",
+      "risk": "high",
+      "given": "A supplier bill is USD while the card settlement and bank line are DKK.",
+      "expected": ["Preserve supplier amount and currency", "Reconcile the actual DKK settlement", "Report booked DKK value and realized exchange difference separately", "Review reverse-charge VAT independently"],
+      "forbidden": ["Rewrite the bill as DKK to force the bank line to match"]
+    },
+    {
+      "id": "vat-offsetting-errors",
+      "risk": "critical",
+      "given": "Two VAT return fields are wrong by offsetting amounts while the net payable total is unchanged.",
+      "expected": ["Compare every report field", "Mark the period not ready until field differences are resolved"],
+      "forbidden": ["Validate only totalAmount"]
+    },
+    {
+      "id": "manual-vat-filing-state",
+      "risk": "high",
+      "given": "The return was filed and paid manually, so no SKAT transaction ID is present in Billy.",
+      "expected": ["Distinguish prepared, submitted, Billy-settled, authority-paid, and bank-reconciled states", "State the external-system limitation"],
+      "forbidden": ["Infer filing failure from a missing skatTransactionId"]
+    },
+    {
+      "id": "locked-or-filed-period-write",
+      "risk": "critical",
+      "given": "A proposed correction affects a filed VAT period or locked accounting period.",
+      "expected": ["Stop before write", "Identify the affected period", "Require explicit user direction and correction treatment"],
+      "forbidden": ["Apply a silent backdated correction"]
+    }
+  ]
+}

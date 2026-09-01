@@ -103,12 +103,27 @@ Eksempler på dansk:
 | --- | --- | --- |
 | `read-only` | Read | All Billy `GET` endpoints |
 | `bank-payments` | Write | Create and update bank payments |
+| `purchase-bookkeeping` | Write | Create and update bills, bill lines, and linked attachments |
 | `bank-reconciliation` | Write | Create, update, and delete bank-line matches and their subject associations |
+| `duplicate-bank-line-cleanup` | Write | Delete exact bank lines through the guarded preview/commit workflow |
 | `daybook-corrections` | Write | Create and update daybook transactions and lines |
+| `sales-tax-settlement` | Write | Update Billy VAT settlement state and VAT payment records; never submit to SKAT |
 
 Individual selectors may be an MCP tool name such as `delete_bank_line_match`, an OpenAPI operation ID, a method/path such as `DELETE /bankLineMatches/{bankLineMatchId}`, a tag selector such as `tag:BankLineMatches`, or a wildcard. An entry in `disabledEndpoints` overrides feature and endpoint enables.
 
 You may edit the user-local JSON manually, but MCP-driven changes are safer because they are validated against the bundled Billy OpenAPI contract and take effect immediately. Restart the MCP client after a manual edit. Do not edit configuration inside the installed plugin cache; upgrades replace those files.
+
+## Accounting review workflows
+
+The plugin adds fixed tools for the reviews that otherwise require many raw API calls:
+
+- `api_mcp_diagnostics` identifies the running build, OpenAPI contract, profiles, credential availability, response limit, and active feature policies.
+- `diagnose_billy_connection` verifies a selected profile with a harmless Billy organization read.
+- `review_billy_bank_account`, `review_billy_document_coverage`, `review_billy_vat_period`, and `review_billy_foreign_currency_purchase` return structured evidence, pagination completeness, data-through timestamps, and explicit API visibility limits.
+- `preview_billy_bank_line_cleanup` re-reads exact candidates and returns a deterministic digest without writing.
+- `commit_billy_bank_line_cleanup` rejects changed or newly associated targets, requests one native approval for the complete exact batch, and verifies each idempotent delete.
+
+An empty API result is not treated as absence unless every relevant page was read. A bank-line status such as `booked` is not treated as reconciliation proof without an approved match and its subject associations. Billy's documented API does not expose every web inbox state, so the workflow reports that limitation instead of claiming that a browser-visible file does not exist.
 
 ## Multiple Billy accounts
 
@@ -165,7 +180,7 @@ There is deliberately no mutable global active account. When more than one profi
 
 The MCP tool list is shared across profiles. If a write tool is enabled for one profile, it is visible globally, but the server rejects it for every profile whose own policy does not allow it before reading a credential or making an HTTP request.
 
-Every Billy create, update, or delete request is validated against the bundled OpenAPI operation, checked against the selected profile's policy, and shown in a native macOS approval dialog with its exact arguments and Billy destination. Billy credentials are read only after approval. Read-only Billy calls remain non-interactive apart from first-use credential setup.
+Every Billy create, update, or delete request is validated against the bundled OpenAPI operation, checked against the selected profile's current policy, and shown in a native macOS approval dialog with its exact arguments and Billy destination. Billy credentials are read only after approval. A guarded workflow batch shows every exact item in one approval and cannot execute a call outside that approved set. Read-only Billy calls remain non-interactive apart from first-use credential setup.
 
 Changes made through profile and configuration tools update the current MCP process immediately. Restart another already-running MCP client after changing profiles or policies from ChatGPT, Codex, Claude, or a manual file edit so that client reloads the registry.
 

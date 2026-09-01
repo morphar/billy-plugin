@@ -88,12 +88,27 @@ Eksempler på forespørgsler:
 | --- | --- | --- |
 | `read-only` | Læsning | Alle Billy `GET`-endpoints |
 | `bank-payments` | Skrivning | Oprettelse og opdatering af bankbetalinger |
+| `purchase-bookkeeping` | Skrivning | Oprettelse og opdatering af regninger, regningslinjer og tilknyttede bilag |
 | `bank-reconciliation` | Skrivning | Oprettelse, opdatering og sletning af banklinjematches og deres emnetilknytninger |
+| `duplicate-bank-line-cleanup` | Skrivning | Sletning af præcise banklinjer gennem den beskyttede preview/commit-arbejdsgang |
 | `daybook-corrections` | Skrivning | Oprettelse og opdatering af kassekladdeposteringer og -linjer |
+| `sales-tax-settlement` | Skrivning | Opdatering af momsafregning og momsbetalinger i Billy; indsender aldrig til Skattestyrelsen |
 
 En individuel selektor kan være et MCP-værktøjsnavn som `delete_bank_line_match`, et OpenAPI-operation-ID, en metode og sti som `DELETE /bankLineMatches/{bankLineMatchId}`, en tagselektor som `tag:BankLineMatches` eller et wildcard. Et element i `disabledEndpoints` har forrang for aktiverede funktioner og endpoints.
 
 Du kan redigere den lokale JSON-fil manuelt, men ændringer gennem MCP'en er sikrere, fordi de valideres mod den medfølgende Billy OpenAPI-kontrakt og træder i kraft med det samme. Genstart MCP-klienten efter manuel redigering. Redigér ikke konfigurationen i den installerede plugin-cache; disse filer bliver erstattet ved opgraderinger.
+
+## Arbejdsgange til regnskabskontrol
+
+Pluginet tilføjer faste værktøjer til de kontroller, der ellers kræver mange rå API-kald:
+
+- `api_mcp_diagnostics` identificerer den kørende version, OpenAPI-kontrakten, profiler, tilgængelighed af legitimationsoplysninger, svargrænsen og de aktive funktionspolitikker.
+- `diagnose_billy_connection` kontrollerer en valgt profil med en ufarlig læsning af Billy-organisationen.
+- `review_billy_bank_account`, `review_billy_document_coverage`, `review_billy_vat_period` og `review_billy_foreign_currency_purchase` returnerer struktureret dokumentation, paginationens fuldstændighed, dataenes sluttidspunkt og eksplicitte API-begrænsninger.
+- `preview_billy_bank_line_cleanup` genlæser præcise kandidater og returnerer et deterministisk digest uden at skrive.
+- `commit_billy_bank_line_cleanup` afviser ændrede eller nyligt tilknyttede mål, beder om én lokal godkendelse til hele den præcise batch og kontrollerer hver idempotent sletning.
+
+Et tomt API-resultat behandles ikke som fravær, medmindre alle relevante sider er læst. En banklinjestatus som `booked` behandles ikke som bevis på afstemning uden et godkendt match og dets emnetilknytninger. Billys dokumenterede API viser ikke alle tilstande fra webappens bilagsindbakke, så arbejdsgangen oplyser begrænsningen i stedet for at påstå, at en fil, som kan ses i browseren, ikke findes.
 
 ## Flere Billy-konti
 
@@ -142,7 +157,7 @@ Der findes bevidst ingen foranderlig global aktiv konto. Når der findes mere en
 
 MCP-værktøjslisten deles mellem profilerne. Hvis et skriveværktøj er aktiveret for én profil, er det synligt globalt, men serveren afviser det for alle profiler, hvis egen politik ikke tillader det—før en legitimationsoplysning læses, eller en HTTP-forespørgsel sendes.
 
-Alle Billy-forespørgsler, der opretter, opdaterer eller sletter, valideres mod den medfølgende OpenAPI-operation og kontrolleres mod den valgte profils politik. Derefter vises de i en lokal macOS-dialog med de præcise argumenter og Billy-destinationen. Billy-legitimationsoplysninger læses først efter godkendelsen. Skrivebeskyttede Billy-kald er ikke interaktive bortset fra den første opsætning eller godkendelse i Nøglering.
+Alle Billy-forespørgsler, der opretter, opdaterer eller sletter, valideres mod den medfølgende OpenAPI-operation og kontrolleres mod den valgte profils aktuelle politik. Derefter vises de i en lokal macOS-dialog med de præcise argumenter og Billy-destinationen. Billy-legitimationsoplysninger læses først efter godkendelsen. En beskyttet workflow-batch viser alle præcise elementer i én godkendelse og kan ikke udføre et kald uden for det godkendte sæt. Skrivebeskyttede Billy-kald er ikke interaktive bortset fra den første opsætning eller godkendelse i Nøglering.
 
 Ændringer gennem profil- og konfigurationsværktøjerne opdaterer den aktuelle MCP-proces med det samme. Genstart en anden MCP-klient, der allerede kører, efter ændringer af profiler eller politikker fra ChatGPT, Codex, Claude eller ved manuel filredigering, så klienten genindlæser registeret.
 

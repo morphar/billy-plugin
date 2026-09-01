@@ -3,6 +3,8 @@ set -eu
 
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 plugin_dir="$repository_root/plugins/billy-plugin"
+default_api_mcp_source=$(CDPATH= cd -- "$repository_root/.." && pwd)/api-mcp
+api_mcp_source=${API_MCP_SOURCE:-$default_api_mcp_source}
 
 api_mcp_version=$(tr -d '[:space:]' < "$repository_root/API_MCP_VERSION")
 api_mcp_commit=$(tr -d '[:space:]' < "$repository_root/API_MCP_COMMIT")
@@ -12,6 +14,19 @@ if ! printf '%s\n' "$api_mcp_version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][
 fi
 if ! printf '%s\n' "$api_mcp_commit" | grep -Eq '^[0-9a-f]{40}$'; then
   echo "API_MCP_COMMIT must contain exactly one full lowercase Git commit hash" >&2
+  exit 1
+fi
+if [ ! -f "$api_mcp_source/go.mod" ]; then
+  echo "api-mcp source not found at $api_mcp_source; set API_MCP_SOURCE" >&2
+  exit 1
+fi
+actual_api_mcp_commit=$(git -C "$api_mcp_source" rev-parse HEAD 2>/dev/null || true)
+if [ "$actual_api_mcp_commit" != "$api_mcp_commit" ]; then
+  echo "api-mcp source commit $actual_api_mcp_commit does not match API_MCP_COMMIT $api_mcp_commit" >&2
+  exit 1
+fi
+if [ -n "$(git -C "$api_mcp_source" status --porcelain)" ]; then
+  echo "api-mcp source contains uncommitted files; validation requires the exact clean pinned commit" >&2
   exit 1
 fi
 
@@ -26,12 +41,13 @@ manifest_path = root / "plugins/billy-plugin/.codex-plugin/plugin.json"
 mcp_path = root / "plugins/billy-plugin/.mcp.json"
 config_path = root / "plugins/billy-plugin/config/billy.json"
 features_path = root / "plugins/billy-plugin/config/features.json"
+evals_path = root / "plugins/billy-plugin/evals/accounting-regressions.json"
 notices_path = root / "plugins/billy-plugin/THIRD_PARTY_NOTICES.md"
 api_mcp_version = (root / "API_MCP_VERSION").read_text().strip()
 api_mcp_commit = (root / "API_MCP_COMMIT").read_text().strip()
 
 documents = {}
-for path in (marketplace_path, manifest_path, mcp_path, config_path, features_path):
+for path in (marketplace_path, manifest_path, mcp_path, config_path, features_path, evals_path):
     documents[path] = json.loads(path.read_text())
 
 marketplace = documents[marketplace_path]
@@ -39,6 +55,7 @@ manifest = documents[manifest_path]
 mcp = documents[mcp_path]
 config = documents[config_path]
 features = documents[features_path]
+evals = documents[evals_path]
 
 assert marketplace["name"] == "billy"
 assert marketplace["plugins"][0]["name"] == manifest["name"] == "billy-plugin"
@@ -51,6 +68,21 @@ assert config["toolPolicy"]["defaultFeatures"] == ["read-only"]
 assert config["auth"]["keychain"]["promptOnMissing"] is True
 assert "read-only" in {feature["id"] for feature in features["features"]}
 assert next(feature for feature in features["features"] if feature["id"] == "read-only")["endpoints"] == ["GET *"]
+feature_by_id = {feature["id"]: feature for feature in features["features"]}
+assert feature_by_id["duplicate-bank-line-cleanup"]["endpoints"] == ["delete_bank_line"]
+assert "delete_bank_line" not in feature_by_id["bank-reconciliation"]["endpoints"]
+assert set(feature_by_id["purchase-bookkeeping"]["endpoints"]) == {
+    "create_bill", "update_bill", "create_bill_line", "update_bill_line",
+    "create_attachment", "update_attachment",
+}
+assert set(feature_by_id["sales-tax-settlement"]["endpoints"]) == {
+    "update_sales_tax_return", "create_sales_tax_payment", "update_sales_tax_payment",
+}
+assert evals["version"] == 1
+assert len(evals["cases"]) >= 10
+assert len({case["id"] for case in evals["cases"]}) == len(evals["cases"])
+assert {case["risk"] for case in evals["cases"]} <= {"medium", "high", "critical"}
+assert all(case["expected"] and case["forbidden"] for case in evals["cases"])
 notices = notices_path.read_text()
 assert api_mcp_version in notices
 assert api_mcp_commit in notices
@@ -63,6 +95,8 @@ for relative in (
     "bin/darwin-arm64/billy-mcp",
     "config/billy.json",
     "config/features.json",
+    "evals/README.md",
+    "evals/accounting-regressions.json",
     "openapi/billy.yaml",
     "openapi/README.da.md",
     "skills/accounting/SKILL.md",
@@ -89,6 +123,17 @@ for guide in (english_plugin_guide, danish_plugin_guide):
 print("plugin structure: ok")
 PY
 
+temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/billy-mcp-validate.XXXXXX")
+trap 'rm -rf "$temporary_dir"' EXIT HUP INT TERM
+cp "$repository_root/go.mod" "$temporary_dir/billy.mod"
+cp "$repository_root/go.sum" "$temporary_dir/billy.sum"
+go mod edit -modfile="$temporary_dir/billy.mod" -replace="github.com/cortexium-io/api-mcp=$api_mcp_source"
+(
+  cd "$repository_root"
+  go test -modfile="$temporary_dir/billy.mod" ./...
+  go vet -modfile="$temporary_dir/billy.mod" ./...
+)
+
 for script in "$repository_root"/scripts/* "$plugin_dir"/scripts/* "$plugin_dir"/*.command; do
   [ -f "$script" ] || continue
   sh -n "$script"
@@ -102,5 +147,28 @@ done
     sha256sum -c SHA256SUMS
   fi
 )
+
+python3 - "$plugin_dir" <<'PY'
+import os
+import pathlib
+import subprocess
+import sys
+import tempfile
+
+plugin = pathlib.Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="billy-plugin-validate-") as home:
+    env = os.environ.copy()
+    env["HOME"] = home
+    env["XDG_CONFIG_HOME"] = str(pathlib.Path(home) / "config")
+    subprocess.run(
+        [str(plugin / "bin/darwin-arm64/billy-mcp"), "--config", str(plugin / "config/billy.json")],
+        cwd=plugin,
+        env=env,
+        input=b"",
+        check=True,
+    )
+
+print("Billy OpenAPI runtime config: ok")
+PY
 
 echo "release package: ok"

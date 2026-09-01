@@ -30,6 +30,38 @@ Treat accounting records as production financial data.
 - Before every live write, restate the target Billy profile name and stable ID together with the intended bookkeeping change. Treat a profile mismatch as a hard stop.
 - Expect the local MCP to show the exact validated write in a native macOS approval dialog. Cancellation means no credential is read and no Billy request is sent; do not retry unless the user asks.
 - Stop and ask before changing submitted VAT/sales-tax periods, filed years, payroll, tax filings, locked periods, loans, equity, or materially uncertain tax treatment.
+- If the Billy tools are missing, stale, or attached from another plugin version, stop and ask the user to restart the client and begin a new task. Do not launch copied, patched, ad-hoc-signed, or directly invoked MCP binaries as a workaround; macOS Keychain access is bound to the installed executable's identity.
+
+## Session Ledger And Completion Gate
+
+For every task that reviews more than one record, keep one authoritative working ledger. It may be an in-memory structure for a small review or a local CSV/JSON file for a large review, but it must contain:
+
+- stable Billy profile ID and display name
+- organization ID/name, jurisdiction, accounting basis, fiscal year, VAT status, and filed/locked periods in scope
+- each source examined, its account/period, latest source timestamp, pages read, records read, and completeness state
+- every discrepancy or work item with amount, date, source record IDs, classification, evidence, intended treatment, status, and verification result
+- every live write with its target IDs, approved intent, result IDs, and read-back evidence
+
+Use only these completeness and visibility states:
+
+- `FOUND`: the requested record or state was found.
+- `NOT_FOUND_COMPLETE`: every relevant page and supported source was read and the record was not found.
+- `PAGINATION_INCOMPLETE`: one or more relevant result pages were not read or a response was truncated.
+- `API_ACCESS_DENIED`: Billy rejected the API resource or operation.
+- `UNLINKED`: the object exists but is not linked to the owner/transaction needed by the queried API resource.
+- `UI_ONLY`: the web app exposes the object but the documented API does not.
+- `WRONG_PROFILE`: the queried Billy profile is not the intended company.
+- `WRONG_PERIOD`: the record is outside the reviewed accounting or statement period.
+
+API absence is never proof of business absence unless the result is `NOT_FOUND_COMPLETE`. When the user can see a record in Billy that the MCP cannot see, report the current state and use the signed-in browser for read-only confirmation when available. Do not call undocumented private Billy endpoints.
+
+Do not say `done`, `fully reconciled`, `ready to file`, or an equivalent completion claim until all of these are true:
+
+1. Every in-scope source is `FOUND` or `NOT_FOUND_COMPLETE`, not incomplete or inaccessible without an explicit limitation.
+2. Every work item is resolved, intentionally excluded with rationale, or listed as a remaining blocker.
+3. All touched records were re-read after writes.
+4. Account balances, bank-line approval/associations, VAT fields, void states, and remaining unmatched items were recomputed as relevant.
+5. The final answer names the data-through timestamp and any UI-only or external-system limitation.
 
 ## First Pass
 
@@ -42,6 +74,7 @@ Treat accounting records as production financial data.
    - Pull or parse bank lines, card lines, postings, bills, invoices, payments, tax rates, VAT returns, and daybooks as needed.
    - Use conservative pagination with MCPs that cap responses.
    - Create working CSVs/notes when analysis spans many transactions.
+   - Record page counts and response `truncated` flags in the session ledger. A page-size cap or result count matching the requested page size is not evidence that the final page was reached.
 
 3. Classify the task.
    - Classification: decide how a transaction should be booked.
@@ -49,6 +82,21 @@ Treat accounting records as production financial data.
    - Correction: reverse/reclassify/delete/recreate wrong entries.
    - VAT/tax review: determine whether reporting was affected.
    - Closing: identify unresolved balances, stale receivables/payables, missing accruals, or owner/equity cleanup.
+
+## Preferred Billy Workflow Tools
+
+Use the fixed Billy workflow tools before composing the same review from raw endpoints:
+
+- `api_mcp_diagnostics`: verify the running plugin/spec version, response limit, profile IDs, credential availability, and feature policy.
+- `diagnose_billy_connection`: make a harmless Billy read and verify the selected profile/organization.
+- `review_billy_bank_account`: page through one bank/card account, separate booked from reconciled lines, and identify duplicate candidates and source freshness.
+- `review_billy_document_coverage`: compare bills and linked attachments for a period while preserving the documented-API inbox limitation.
+- `review_billy_vat_period`: return the exact Billy VAT period fields and keep prepared, settled, paid, and externally submitted states separate.
+- `review_billy_foreign_currency_purchase`: inspect supplier currency, Billy exchange rate/local value, payment evidence, and realized currency difference separately.
+- `preview_billy_bank_line_cleanup`: re-read exact candidate lines and produce the deterministic cleanup digest without writing.
+- `commit_billy_bank_line_cleanup`: re-read and compare the digest, reject newly associated or changed lines, request one approval for the exact batch, and verify every deletion.
+
+Raw OpenAPI tools remain the fallback for unsupported records and targeted evidence. A workflow error or incomplete result does not authorize bypassing profile policy, local approval, digest checks, or the completion gate.
 
 ## Common Booking Patterns
 
@@ -125,6 +173,39 @@ Assets, subscriptions, and prepayments:
 
 If same-day bank-line order is ambiguous, reconstruct order from running balances instead of trusting API list order.
 
+Treat bank-line state precisely:
+
+- `bankLine.status = booked` does not prove reconciliation.
+- A line is reconciled only when its match is approved and its subject associations fully explain the amount and direction, unless Billy exposes a stronger documented invariant.
+- Report the latest bank-feed timestamp separately from the accounting date. A balanced ledger cannot prove that a stale bank feed includes later real-world movements.
+
+## Document Coverage Workflow
+
+1. Read bills/purchases and their linked attachments for the target period.
+2. Compare those records to bank/card lines and known suppliers.
+3. Treat an uploaded but unprocessed Billy inbox file as `UI_ONLY` or `API_ACCESS_DENIED` when the documented API cannot list it.
+4. After the user creates a purchase, re-read the resulting bill and attachment owner reference before marking the document covered.
+5. Never report a zero attachment result as "no uploaded receipts" without a complete supported inbox source.
+
+## Foreign-Currency Purchase Workflow
+
+1. Keep the bill amount and currency exactly as shown by the supplier document.
+2. Read the actual DKK/local-currency bank or card settlement separately.
+3. Verify whether Billy created the expected local-currency payable, payment, and realized exchange-difference postings.
+4. Reconcile the bank/card line to the local-currency payment amount, not to the foreign face amount.
+5. Report bill currency/amount, booked DKK value, paid DKK amount, exchange difference, payment account, and VAT treatment as separate fields.
+
+## VAT Readiness Workflow
+
+Before saying a VAT period is ready to file:
+
+1. Confirm the intended period, filing frequency, jurisdiction, filed/correction state, and data-through timestamp.
+2. Recompute each VAT return field from the live Billy return/report and relevant postings; do not validate only the net payable amount.
+3. Check document coverage, unresolved bank/card lines, duplicate imports, foreign-service reverse charge, owner movements, fees, and changes in already-filed periods.
+4. Present an exact field-by-field manual filing fallback whenever Billy-to-tax-authority transfer is unavailable or fails.
+5. After filing, distinguish `prepared`, `submitted`, `settled in Billy`, `paid at the authority`, and `bank payment reconciled`. These are separate states.
+6. A missing tax-authority transaction ID after manual filing is not proof that filing failed; use the return status and settled amount together and state the limitation.
+
 ## VAT And Tax Review
 
 Payment-account and reconciliation fixes usually do not change VAT if bill/invoice lines and VAT codes are unchanged.
@@ -167,3 +248,4 @@ For completed API work, end with:
 - important decisions
 - remaining risks
 - recommended next step
+- data-through timestamp and completeness/visibility limitations

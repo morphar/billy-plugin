@@ -29,7 +29,7 @@ Billy Plugin is released personally from `morphar/billy-plugin`. Official beta r
 
    ```bash
    ./scripts/validate
-   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0-beta.1 ./plugins/billy-plugin/scripts/build-macos-arm64
+   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0-beta.2 ./plugins/billy-plugin/scripts/build-macos-arm64
    ./scripts/validate
    ```
 
