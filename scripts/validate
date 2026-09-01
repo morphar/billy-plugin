@@ -16,17 +16,20 @@ if ! printf '%s\n' "$api_mcp_commit" | grep -Eq '^[0-9a-f]{40}$'; then
   echo "API_MCP_COMMIT must contain exactly one full lowercase Git commit hash" >&2
   exit 1
 fi
-if [ ! -f "$api_mcp_source/go.mod" ]; then
-  echo "api-mcp source not found at $api_mcp_source; set API_MCP_SOURCE" >&2
-  exit 1
-fi
-actual_api_mcp_commit=$(git -C "$api_mcp_source" rev-parse HEAD 2>/dev/null || true)
-if [ "$actual_api_mcp_commit" != "$api_mcp_commit" ]; then
-  echo "api-mcp source commit $actual_api_mcp_commit does not match API_MCP_COMMIT $api_mcp_commit" >&2
-  exit 1
-fi
-if [ -n "$(git -C "$api_mcp_source" status --porcelain)" ]; then
-  echo "api-mcp source contains uncommitted files; validation requires the exact clean pinned commit" >&2
+use_api_mcp_source=false
+if [ -f "$api_mcp_source/go.mod" ]; then
+  actual_api_mcp_commit=$(git -C "$api_mcp_source" rev-parse HEAD 2>/dev/null || true)
+  if [ "$actual_api_mcp_commit" != "$api_mcp_commit" ]; then
+    echo "api-mcp source commit $actual_api_mcp_commit does not match API_MCP_COMMIT $api_mcp_commit" >&2
+    exit 1
+  fi
+  if [ -n "$(git -C "$api_mcp_source" status --porcelain)" ]; then
+    echo "api-mcp source contains uncommitted files; validation requires the exact clean pinned commit" >&2
+    exit 1
+  fi
+  use_api_mcp_source=true
+elif [ -n "${API_MCP_SOURCE:-}" ]; then
+  echo "api-mcp source not found at explicit API_MCP_SOURCE $api_mcp_source" >&2
   exit 1
 fi
 
@@ -123,16 +126,24 @@ for guide in (english_plugin_guide, danish_plugin_guide):
 print("plugin structure: ok")
 PY
 
-temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/billy-mcp-validate.XXXXXX")
-trap 'rm -rf "$temporary_dir"' EXIT HUP INT TERM
-cp "$repository_root/go.mod" "$temporary_dir/billy.mod"
-cp "$repository_root/go.sum" "$temporary_dir/billy.sum"
-go mod edit -modfile="$temporary_dir/billy.mod" -replace="github.com/cortexium-io/api-mcp=$api_mcp_source"
-(
-  cd "$repository_root"
-  go test -modfile="$temporary_dir/billy.mod" ./...
-  go vet -modfile="$temporary_dir/billy.mod" ./...
-)
+if [ "$use_api_mcp_source" = true ]; then
+  temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/billy-mcp-validate.XXXXXX")
+  trap 'rm -rf "$temporary_dir"' EXIT HUP INT TERM
+  cp "$repository_root/go.mod" "$temporary_dir/billy.mod"
+  cp "$repository_root/go.sum" "$temporary_dir/billy.sum"
+  go mod edit -modfile="$temporary_dir/billy.mod" -replace="github.com/cortexium-io/api-mcp=$api_mcp_source"
+  (
+    cd "$repository_root"
+    go test -modfile="$temporary_dir/billy.mod" ./...
+    go vet -modfile="$temporary_dir/billy.mod" ./...
+  )
+else
+  (
+    cd "$repository_root"
+    go test ./...
+    go vet ./...
+  )
+fi
 
 for script in "$repository_root"/scripts/* "$plugin_dir"/scripts/* "$plugin_dir"/*.command; do
   [ -f "$script" ] || continue

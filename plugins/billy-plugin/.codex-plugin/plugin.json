@@ -1,6 +1,6 @@
 {
   "name": "billy-plugin",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Beta, AI-assisted local Billy accounting tools and workflows for ChatGPT and Codex.",
   "author": {
     "name": "Dan Larsen",

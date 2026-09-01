@@ -116,7 +116,7 @@ Accounting APIs may contain duplicate bank lines from multiple imports/providers
 - Do not create multiple accounting entries for duplicate representations of the same real movement.
 - Report duplicate unapproved matches as import cleanup candidates.
 
-For destructive cleanup, separate preview from commit. The preview must include exact line IDs, provider/group/external IDs, dates, descriptions, amounts, running balances, match/association state, count, signed sum, and a deterministic digest. Commit must re-read every target, reject changed or associated targets, and require one approval for the complete batch.
+For destructive cleanup, separate preview from commit. The preview must include exact line IDs, provider/group/external IDs, dates, descriptions, amounts, running balances, match/association state, count, signed sum, and a deterministic digest. Commit must re-read every target before approval, require one approval for the complete batch, then immediately re-read and reject changed, approved, or associated targets before any delete. This narrows but does not eliminate an external race when the upstream delete endpoint has no conditional-write precondition.
 
 ## Guard Checks Before Writes
 

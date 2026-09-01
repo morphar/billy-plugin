@@ -29,7 +29,7 @@ Billy Plugin is released personally from `morphar/billy-plugin`. Official beta r
 
    ```bash
    ./scripts/validate
-   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0-beta.2 ./plugins/billy-plugin/scripts/build-macos-arm64
+   API_MCP_SOURCE=/absolute/path/to/api-mcp VERSION=0.1.0-beta.3 ./plugins/billy-plugin/scripts/build-macos-arm64
    ./scripts/validate
    ```
 
@@ -39,8 +39,8 @@ Billy Plugin is released personally from `morphar/billy-plugin`. Official beta r
 7. Create and push an annotated tag matching the manifest's prerelease version:
 
    ```bash
-   git tag -a v0.1.0-beta.1 -m "Billy Plugin v0.1.0-beta.1"
-   git push origin v0.1.0-beta.1
+   git tag -a v0.1.0-beta.3 -m "Billy Plugin v0.1.0-beta.3"
+   git push origin v0.1.0-beta.3
    ```
 
 8. Review and approve the `release` environment deployment when a reviewer gate is configured, then confirm the workflow succeeds.

@@ -279,7 +279,8 @@ func previewBankLineCleanup(ctx context.Context, rt runtime, input cleanupPrevie
 		},
 		"guardSemantics": map[string]any{
 			"persistedPreviewToken": false,
-			"optimisticConcurrency": "Commit recomputes the caller-supplied plan digest, re-reads every delete and retain line plus every delete match, and rejects any field change or new subject association before requesting approval.",
+			"optimisticConcurrency": "Commit recomputes the caller-supplied plan digest and re-reads every delete and retain line plus every delete match both before requesting approval and immediately after approval. It rejects any field change, approved match, or new subject association before resolving credentials or deleting a line.",
+			"atomicityLimit":        "Billy's documented delete operation has no conditional-write precondition. The immediate post-approval re-read narrows, but cannot eliminate, a concurrent external change between the last check and DELETE.",
 			"writeScope":            "Only the exact plan.targets[].delete.id bank lines are submitted to delete_bank_line. Retained lines and match records are never written by this workflow.",
 		},
 		"completeness": map[string]any{
@@ -421,6 +422,9 @@ func commitBankLineCleanup(ctx context.Context, rt runtime, input cleanupCommitI
 			},
 			Items:       batchItems,
 			StopOnError: false,
+			AfterApprovalCheck: func(checkContext context.Context) error {
+				return revalidateCleanupPlanAfterApproval(checkContext, rt, input.Profile, input.Plan)
+			},
 		})
 		if err != nil {
 			return nil, err
@@ -508,6 +512,59 @@ func commitBankLineCleanup(ctx context.Context, rt runtime, input cleanupCommitI
 			"sources":  map[string]any{"bankLineSubjectAssociations": associationPaging},
 		},
 	}, nil
+}
+
+func revalidateCleanupPlanAfterApproval(ctx context.Context, rt runtime, profileID string, plan cleanupPlan) error {
+	associations, paging, err := fetchAll(ctx, rt, profileID, "list_bank_line_subject_associations", "bankLineSubjectAssociations", nil)
+	if err != nil {
+		return err
+	}
+	if !paging.Complete {
+		return errors.New("bank-line subject associations were not fetched completely after approval")
+	}
+	associationsByMatch := associationsByMatchID(associations)
+	for _, target := range plan.Targets {
+		retainLine, found, err := readBankLineSnapshot(ctx, rt, profileID, target.Retain.ID)
+		if err != nil {
+			return err
+		}
+		if !found || !reflect.DeepEqual(retainLine, target.Retain) {
+			return fmt.Errorf("retain bank line %q is missing or changed after approval", target.Retain.ID)
+		}
+		deleteLine, found, err := readBankLineSnapshot(ctx, rt, profileID, target.Delete.ID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+		if !reflect.DeepEqual(deleteLine, target.Delete) {
+			return fmt.Errorf("delete bank line %q changed after approval", target.Delete.ID)
+		}
+		if _, err := validateDuplicatePair(plan.AccountID, deleteLine, retainLine); err != nil {
+			return err
+		}
+		if target.DeleteMatch == nil {
+			if deleteLine.MatchID != "" {
+				return fmt.Errorf("delete bank line %q gained match %q after approval", deleteLine.ID, deleteLine.MatchID)
+			}
+			continue
+		}
+		match, found, err := readBankLineMatchSnapshot(ctx, rt, profileID, target.DeleteMatch.ID)
+		if err != nil {
+			return err
+		}
+		if !found || !reflect.DeepEqual(match, *target.DeleteMatch) {
+			return fmt.Errorf("bank-line match %q is missing or changed after approval", target.DeleteMatch.ID)
+		}
+		if match.IsApproved {
+			return fmt.Errorf("delete bank line %q became unsafe after approval: match %q is approved", deleteLine.ID, match.ID)
+		}
+		if count := len(associationsByMatch[match.ID]); count > 0 {
+			return fmt.Errorf("delete bank line %q became unsafe after approval: match %q has %d subject association(s)", deleteLine.ID, match.ID, count)
+		}
+	}
+	return nil
 }
 
 func cleanupSideTotals(plan cleanupPlan, deleteSide bool) (float64, float64) {

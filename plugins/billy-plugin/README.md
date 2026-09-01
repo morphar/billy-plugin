@@ -121,7 +121,7 @@ The plugin adds fixed tools for the reviews that otherwise require many raw API 
 - `diagnose_billy_connection` verifies a selected profile with a harmless Billy organization read.
 - `review_billy_bank_account`, `review_billy_document_coverage`, `review_billy_vat_period`, and `review_billy_foreign_currency_purchase` return structured evidence, pagination completeness, data-through timestamps, and explicit API visibility limits.
 - `preview_billy_bank_line_cleanup` re-reads exact candidates and returns a deterministic digest without writing.
-- `commit_billy_bank_line_cleanup` rejects changed or newly associated targets, requests one native approval for the complete exact batch, and verifies each idempotent delete.
+- `commit_billy_bank_line_cleanup` rejects changed, approved, or newly associated targets, requests one native approval for the complete exact batch, re-checks protected state immediately after approval, and verifies each idempotent delete. Billy's documented delete endpoint has no conditional-write precondition, so this guard narrows but cannot eliminate a concurrent external change between the final check and deletion.
 
 An empty API result is not treated as absence unless every relevant page was read. A bank-line status such as `booked` is not treated as reconciliation proof without an approved match and its subject associations. Billy's documented API does not expose every web inbox state, so the workflow reports that limitation instead of claiming that a browser-visible file does not exist.
 

@@ -106,7 +106,7 @@ Pluginet tilføjer faste værktøjer til de kontroller, der ellers kræver mange
 - `diagnose_billy_connection` kontrollerer en valgt profil med en ufarlig læsning af Billy-organisationen.
 - `review_billy_bank_account`, `review_billy_document_coverage`, `review_billy_vat_period` og `review_billy_foreign_currency_purchase` returnerer struktureret dokumentation, paginationens fuldstændighed, dataenes sluttidspunkt og eksplicitte API-begrænsninger.
 - `preview_billy_bank_line_cleanup` genlæser præcise kandidater og returnerer et deterministisk digest uden at skrive.
-- `commit_billy_bank_line_cleanup` afviser ændrede eller nyligt tilknyttede mål, beder om én lokal godkendelse til hele den præcise batch og kontrollerer hver idempotent sletning.
+- `commit_billy_bank_line_cleanup` afviser ændrede, godkendte eller nyligt tilknyttede mål, beder om én lokal godkendelse til hele den præcise batch, kontrollerer den beskyttede tilstand igen umiddelbart efter godkendelsen og verificerer hver idempotent sletning. Billys dokumenterede slette-endpoint har ingen betinget skriveforudsætning, så kontrollen indsnævrer, men kan ikke fjerne, risikoen for en samtidig ekstern ændring mellem sidste kontrol og sletning.
 
 Et tomt API-resultat behandles ikke som fravær, medmindre alle relevante sider er læst. En banklinjestatus som `booked` behandles ikke som bevis på afstemning uden et godkendt match og dets emnetilknytninger. Billys dokumenterede API viser ikke alle tilstande fra webappens bilagsindbakke, så arbejdsgangen oplyser begrænsningen i stedet for at påstå, at en fil, som kan ses i browseren, ikke findes.
 

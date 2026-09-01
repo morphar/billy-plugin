@@ -21,7 +21,7 @@ func Tools() []apimcp.ExtensionTool {
 			Tool: &mcp.Tool{
 				Name:        "commit_billy_bank_line_cleanup",
 				Title:       "Commit Billy bank-line cleanup",
-				Description: "Commit an unchanged cleanup plan returned by preview_billy_bank_line_cleanup. Re-reads every exact target and association, requests one native batch approval, treats already-absent DELETE targets idempotently, and verifies aggregate absence.",
+				Description: "Commit an unchanged cleanup plan returned by preview_billy_bank_line_cleanup. Re-reads every exact target and association before and immediately after one native batch approval, treats already-absent DELETE targets idempotently, and verifies aggregate absence.",
 				InputSchema: cleanupCommitSchema(),
 				Annotations: &mcp.ToolAnnotations{
 					Title:           "Commit Billy bank-line cleanup",

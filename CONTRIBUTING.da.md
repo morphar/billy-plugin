@@ -14,6 +14,6 @@ Bidrag skal bevare disse garantier:
 - håndhævelse af værktøjspolitikken på serversiden før læsning af legitimationsoplysninger eller HTTP-kald
 - eksplicit brugergodkendelse før udvidelse af værktøjsadgang eller ændring af konkret bogføring
 
-Kør `./scripts/validate` fra repositoriets rod, før du åbner en pull request. Ændringer af MCP-motoren hører til i `cortexium-io/api-mcp`; opdatér først `API_MCP_VERSION`, efter at den pågældende motorversion er udgivet.
+Kør `./scripts/validate` fra repositoriets rod, før du åbner en pull request. I et almindeligt checkout bruger valideringen det udgivne `api-mcp`-modul. Ved koordinerede, endnu ikke udgivne motorændringer skal du sætte `API_MCP_SOURCE=/absolut/sti/til/api-mcp`; valideringen kræver da præcis det rene commit, der står i `API_MCP_COMMIT`, uden et permanent lokalt `replace`-direktiv. Ændringer af MCP-motoren hører til i `cortexium-io/api-mcp`; opdatér først `API_MCP_VERSION`, efter at den pågældende motorversion er udgivet.
 
 Ved at indsende et bidrag accepterer du, at det licenseres under repositoriets MIT License, og bekræfter, at du har ret til at stille bidraget til rådighed under disse vilkår.

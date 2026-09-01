@@ -9,12 +9,14 @@ import (
 )
 
 type cleanupFake struct {
-	runtime      fakeRuntime
-	lines        map[string]map[string]any
-	matches      map[string]map[string]any
-	associations []map[string]any
-	batchError   error
-	keepDeleted  bool
+	runtime       fakeRuntime
+	lines         map[string]map[string]any
+	matches       map[string]map[string]any
+	associations  []map[string]any
+	batchError    error
+	keepDeleted   bool
+	afterApproval func()
+	deleteCalls   int
 }
 
 func newCleanupFake() *cleanupFake {
@@ -75,9 +77,18 @@ func (f *cleanupFake) batch(_ context.Context, request apimcp.ExtensionBatchRequ
 	if f.batchError != nil {
 		return nil, f.batchError
 	}
+	if f.afterApproval != nil {
+		f.afterApproval()
+	}
+	if request.AfterApprovalCheck != nil {
+		if err := request.AfterApprovalCheck(context.Background()); err != nil {
+			return nil, err
+		}
+	}
 	results := make([]apimcp.ExtensionBatchResult, 0, len(request.Items))
 	for _, item := range request.Items {
 		id := item.Input.Path["id"].(string)
+		f.deleteCalls++
 		if !f.keepDeleted {
 			delete(f.lines, id)
 		}
@@ -226,5 +237,26 @@ func TestCleanupCommitReportsVerificationFailure(t *testing.T) {
 	}
 	if response := cleanupCommitResultResponse(result); !response.IsError {
 		t.Fatalf("unverified commit response must be an MCP error: %+v", response)
+	}
+}
+
+func TestCleanupCommitRejectsMatchChangeAfterApprovalBeforeDelete(t *testing.T) {
+	f := newCleanupFake()
+	f.lines["delete"]["matchId"] = "match"
+	f.matches["match"] = map[string]any{"id": "match", "isApproved": false}
+	plan, digest := cleanupPreview(t, f)
+	f.afterApproval = func() {
+		f.matches["match"]["isApproved"] = true
+		f.matches["match"]["approvedTime"] = "2026-09-01T12:00:00Z"
+	}
+
+	_, err := commitBankLineCleanup(context.Background(), &f.runtime, cleanupCommitInput{
+		Profile: "techbase", Digest: digest, Plan: plan,
+	})
+	if err == nil || !strings.Contains(err.Error(), "changed after approval") {
+		t.Fatalf("error = %v", err)
+	}
+	if f.deleteCalls != 0 || f.lines["delete"] == nil {
+		t.Fatalf("unsafe delete crossed post-approval guard: deleteCalls=%d line=%#v", f.deleteCalls, f.lines["delete"])
 	}
 }

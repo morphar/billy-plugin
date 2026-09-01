@@ -94,7 +94,7 @@ Use the fixed Billy workflow tools before composing the same review from raw end
 - `review_billy_vat_period`: return the exact Billy VAT period fields and keep prepared, settled, paid, and externally submitted states separate.
 - `review_billy_foreign_currency_purchase`: inspect supplier currency, Billy exchange rate/local value, payment evidence, and realized currency difference separately.
 - `preview_billy_bank_line_cleanup`: re-read exact candidate lines and produce the deterministic cleanup digest without writing.
-- `commit_billy_bank_line_cleanup`: re-read and compare the digest, reject newly associated or changed lines, request one approval for the exact batch, and verify every deletion.
+- `commit_billy_bank_line_cleanup`: re-read and compare the digest, reject newly associated or changed lines, request one approval for the exact batch, re-read the protected state immediately after approval, and verify every deletion. Billy does not expose a documented conditional-delete precondition, so report the remaining external-concurrency limitation rather than claiming atomic deletion.
 
 Raw OpenAPI tools remain the fallback for unsupported records and targeted evidence. A workflow error or incomplete result does not authorize bypassing profile policy, local approval, digest checks, or the completion gate.
 
