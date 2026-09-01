@@ -23,7 +23,7 @@ Billy Plugin udgives personligt fra `morphar/billy-plugin`. Officielle betaversi
 
 ## Tjekliste til en release
 
-1. Sæt `API_MCP_VERSION` til et eksisterende api-mcp-releasetag og `API_MCP_COMMIT` til det fulde commit-hash, som tagget peger på. Releaseworkflowet kontrollerer parret, før api-mcp-kildekode hentes eller køres.
+1. Sæt `API_MCP_VERSION` til et eksisterende api-mcp-releasetag og `API_MCP_COMMIT` til det fulde commit-hash, som tagget peger på. Kør `GOTOOLCHAIN=go1.27.0 go mod tidy`, efter at tagget er udgivet, så `go.sum` registrerer det udgivne modul, og kontrollér, at `go.mod` ikke indeholder et lokalt `replace`-direktiv. Releaseworkflowet kontrollerer versions-/commit-parret, før api-mcp-kildekode hentes eller køres.
 2. Opdatér pluginmanifestets grundversion efter SemVer og den brugervendte dokumentation.
 3. Kør:
 

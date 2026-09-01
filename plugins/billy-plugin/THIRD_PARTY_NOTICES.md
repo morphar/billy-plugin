@@ -1,6 +1,6 @@
 # Third-party notices
 
-The bundled `billy-mcp` executable includes api-mcp `v0.1.0-beta.2` from commit `1c454d0864ac75bb2fd89b359f7e3dbe85f1532d`:
+The bundled `billy-mcp` executable includes api-mcp `v0.1.0-beta.2` from commit `7aced1601ed0b60f55ea777f2d047102db4fd415`:
 
 > Copyright (c) 2026 Dan Larsen and api-mcp contributors
 

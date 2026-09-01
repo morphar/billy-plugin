@@ -23,7 +23,7 @@ Billy Plugin is released personally from `morphar/billy-plugin`. Official beta r
 
 ## Release checklist
 
-1. Set `API_MCP_VERSION` to an existing api-mcp release tag and `API_MCP_COMMIT` to the full commit hash that the tag resolves to. The release workflow verifies the pair before checking out or executing api-mcp source.
+1. Set `API_MCP_VERSION` to an existing api-mcp release tag and `API_MCP_COMMIT` to the full commit hash that the tag resolves to. Run `GOTOOLCHAIN=go1.27.0 go mod tidy` after the tag is published so `go.sum` records the released module, and confirm `go.mod` contains no local `replace` directive. The release workflow verifies the version/commit pair before checking out or executing api-mcp source.
 2. Update the plugin manifest's base semantic version and user-facing documentation.
 3. Run:
 

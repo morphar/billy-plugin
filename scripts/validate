@@ -31,6 +31,10 @@ if [ -f "$api_mcp_source/go.mod" ]; then
 elif [ -n "${API_MCP_SOURCE:-}" ]; then
   echo "api-mcp source not found at explicit API_MCP_SOURCE $api_mcp_source" >&2
   exit 1
+elif ! grep -Fq "github.com/cortexium-io/api-mcp $api_mcp_version " "$repository_root/go.sum"; then
+  echo "go.sum does not contain released api-mcp module $api_mcp_version" >&2
+  echo "Publish the pinned api-mcp tag, then run 'go mod tidy' before validating without API_MCP_SOURCE." >&2
+  exit 1
 fi
 
 python3 - "$repository_root" <<'PY'
